@@ -39,8 +39,16 @@
     </div>
   </div>
   <span class="wide"><label for="location">location:</label> <input id="location" value="https://ericp.solid.community/public/test-folder/foo.ttl"></input><br/></span>
-  <span class="wide"><label for="shapetree">shape tree:</label> <input id="shapetree" value="https://ericp.solid.community/public/test-folder/foo.ttl" size="60"></input>
-  <label for="intercept">intercept:</label> <input type="checkbox" id="intercept"></input><br/></span>
+  <span class="wide999">
+    <label for="ldptype">LDP Type:</label> <select id="ldptype">
+      <option value="Container">Container</option>
+      <option value="Resource" selected="selected">Resource</option>
+      <option value="NonRDFSource">NonRDFSource</option>
+    </select>
+    <label for="root">root:</label> <input id="root" size="6"></input>
+    <label for="shapetree">shape tree:</label> <input id="shapetree" value="https://ericp.solid.community/public/test-folder/foo.ttl" size="60"></input>
+    <label for="intercept">intercept:</label> <input type="checkbox" id="intercept"></input>
+  </span><br/>
   <label for="mediatype">media type:</label> <input id="mediatype" value="text/turtle"></input>
   <label for="slug">slug:</label> <input id="slug"></input>
   <!-- select id="mediatype">

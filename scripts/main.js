@@ -103,7 +103,7 @@ const Needs = {
 }
 
 const Ctls = ([
-  'manifest', 'view', 'data', 'turtle', 'image', 'directory', 'hex', 'json', 'location', 'intercept', 'shapetree', 'intercept', 'mediatype', 'slug', 'method', 'result'
+  'manifest', 'view', 'data', 'turtle', 'image', 'directory', 'hex', 'json', 'location', 'intercept', 'shapetree', 'intercept', 'mediatype', 'slug', 'root', 'ldptype', 'method', 'result'
 ]).reduce((acc, key) => {
   acc[key] = $('#' + key)
   return acc
@@ -147,8 +147,22 @@ if ('manifest' in Args) {
         const li = $('<li/>').append($('<button/>').text(label).on('click', evt => {
           Ctls.mediatype.removeClass('error')
           Ctls.turtle.removeClass('error')
-          for (let key in j[label])
-            Ctls[key].val(j[label][key]).change()
+          for (let key in j[label]) {
+            if (key === 'turtle' && j[label][key].match(/^https?:/))
+              fetch(j[label][key]).then(
+                resp => resp.text().then(
+                  text => resp.ok
+                    ? Ctls[key].val(text)
+                    : paintError(new Error('GET ' + j[label][key] + '\n' + text))
+                ),
+                e => {
+                  e.message += ' ' +j[label][key]
+                  paintError(e)
+                }
+              );
+            else
+              Ctls[key].val(j[label][key]).change()
+          }
         }))
         ul.append(li)
       }
@@ -202,6 +216,19 @@ async function process (docuri) {
     if (Ctls.method.val() === 'PLANT') {
       const link = ['<http://www.w3.org/ns/ldp#Container>; rel="type"',
                     `<${Ctls.shapetree.val()}>; rel="shapeTree"`];
+      const fetchOpts = {
+        contentType: Ctls.mediatype.val(),
+        acceptString: Ctls.mediatype.val(),
+        data: Ctls.turtle.val(),
+        headers: {
+          slug: Ctls.slug.val(),
+          link: link
+        }
+      }
+      response = await fetcher.webOperation('POST', docuri, fetchOpts)
+    } else if (Ctls.method.val() === 'POST') {
+      const link = [`<http://www.w3.org/ns/ldp#${Ctls.ldptype.val()}>; rel="type"`,
+                    `<${Ctls.root.val()}>; rel="root"`];
       const fetchOpts = {
         contentType: Ctls.mediatype.val(),
         acceptString: Ctls.mediatype.val(),
@@ -295,23 +322,27 @@ async function process (docuri) {
     }
     Ctls.result.text(resultText)
   } catch (e) {
-    console.warn(e)
-    let text = ''
-    try {
-      text = await e.response.text();
-      if ('response' in e) {
-        const contentType = e.response.headers.get('content-type')
-        if (contentType && contentType.startsWith('application/json'))
-          text = JSON.stringify(JSON.parse(text), null, 2)
-      }
-    } catch (e) {  }
-    Ctls.view.val('turtle').trigger('change')
-    // ([Ctls.mediatype, Ctls.turtle]).forEach(elt => elt.addClass('error'))
-    Ctls.mediatype.addClass('error')
-    Ctls.turtle.addClass('error')
-    Ctls.turtle.val(e + '\n' + text)
-    Ctls.mediatype.val('text/plain')
+    paintError(e)
   }
+}
+
+async function paintError (e) {
+  console.warn(e)
+  let text = ''
+  try {
+    text = await e.response.text();
+    if ('response' in e) {
+      const contentType = e.response.headers.get('content-type')
+      if (contentType && contentType.startsWith('application/json'))
+        text = JSON.stringify(JSON.parse(text), null, 2)
+    }
+  } catch (e) {  }
+  Ctls.view.val('turtle').trigger('change')
+  // ([Ctls.mediatype, Ctls.turtle]).forEach(elt => elt.addClass('error'))
+  Ctls.mediatype.addClass('error')
+  Ctls.turtle.addClass('error')
+  Ctls.turtle.val(e + '\n' + text)
+  Ctls.mediatype.val('text/plain')
 }
 
 function parseContainer (store, trim) {
